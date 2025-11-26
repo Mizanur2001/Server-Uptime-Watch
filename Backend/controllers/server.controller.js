@@ -1,4 +1,4 @@
-const Server = require("../models/Server.models");
+const Server = require("../models/server.models");
 const { HandleError, HandleSuccess, HandleServerError } = require("./Base.Controller");
 
 module.exports = {

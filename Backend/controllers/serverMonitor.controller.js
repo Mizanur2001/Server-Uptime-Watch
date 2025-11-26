@@ -1,5 +1,5 @@
 const axios = require("axios");
-const Server = require("../models/Server.models");
+const Server = require("../models/server.models");
 const { HandleError, HandleSuccess, HandleServerError } = require("../controllers/Base.Controller");
 
 module.exports = {
