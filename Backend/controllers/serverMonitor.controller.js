@@ -1,6 +1,7 @@
 const axios = require("axios");
 const Server = require("../models/server.models");
 const { HandleError, HandleSuccess, HandleServerError } = require("../controllers/Base.Controller");
+const { Mail } = require("../services/index.services");
 
 module.exports = {
   checkServers: async (req, res, cronMode = false) => {
@@ -36,6 +37,7 @@ module.exports = {
               memTotal: memTotalGB,
               diskUsed: diskUsedGB,
               diskTotal: diskTotalGB,
+              alertSent: false,
             }
           );
 
@@ -53,10 +55,27 @@ module.exports = {
           });
 
         } catch (err) {
-          await Server.updateOne(
-            { _id: s._id },
-            { status: "DOWN", lastPing: new Date() }
-          );
+
+          if (!s.alertSent) {
+            // Send Email
+            await Mail.sendServerDownEmail(s.name, s.ip);
+
+            await Server.updateOne(
+              { _id: s._id },
+              {
+                status: "DOWN",
+                lastPing: new Date(),
+                alertSent: true
+              }
+            );
+
+          } else {
+
+            await Server.updateOne(
+              { _id: s._id },
+              { status: "DOWN", lastPing: new Date() }
+            );
+          }
 
           results.push({
             name: s.name,
@@ -66,7 +85,6 @@ module.exports = {
             id: s._id
           });
 
-          // ::::::::::TODO:::::::::::: Trigger alert only on state change
         }
       }
 

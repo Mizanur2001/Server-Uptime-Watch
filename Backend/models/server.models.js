@@ -12,6 +12,7 @@ const serverSchema = new mongoose.Schema({
     memTotal: Number,
     diskUsed: Number,
     diskTotal: Number,
+    alertSent: { type: Boolean, default: false },
 });
 
 module.exports = mongoose.model("Server", serverSchema);

@@ -21,7 +21,7 @@ async function start() {
 
     // Start server WITH SOCKET IO
     server.listen(PORT, () => {
-        console.log(`🚀 Server is Listening on ${PORT}`);
+        console.log(`Server is Listening on ${PORT} 🚀`);
     });
 }
 
