@@ -79,8 +79,10 @@ export default function App() {
 }
 
 function Sidebar() {
+  const version = process.env.REACT_APP_VERSION;
   return (
-    <aside className="w-64 border-r border-slate-800 bg-slate-900/60 backdrop-blur-md">
+    <aside className="w-64 border-r border-slate-800 bg-slate-900/60 backdrop-blur-md flex flex-col">
+      {/* Header */}
       <div className="px-4 py-5 border-b border-slate-800">
         <h1 className="text-xl font-bold tracking-tight">
           Uptime<span className="text-emerald-400">Monitor</span>
@@ -88,14 +90,33 @@ function Sidebar() {
         <p className="text-xs text-slate-400 mt-1">Internal status dashboard</p>
       </div>
 
-      <nav className="mt-4 px-2 space-y-1">
+      {/* Navigation */}
+      <nav className="mt-4 px-2 space-y-1 flex-1">
         <SidebarLink to="/" label="Dashboard" />
         <SidebarLink to="/servers" label="Servers" />
         <SidebarLink to="/websites" label="Websites" />
       </nav>
+
+      {/* Footer */}
+      <footer className="mt-auto px-4 py-5 border-t border-slate-800 text-center">
+        <div className="text-[11px] text-slate-500 space-y-1">
+          <p className="tracking-wide">
+            Version <span className="text-slate-300 font-semibold">{version}</span>
+          </p>
+
+          <p>
+            Designed & Developed by{" "}
+            <span className="text-emerald-400 font-semibold hover:text-emerald-300 transition">
+              Mizanur Rahaman
+            </span>
+          </p>
+        </div>
+      </footer>
+
     </aside>
   );
 }
+
 
 function SidebarLink({ to, label }) {
   return (
