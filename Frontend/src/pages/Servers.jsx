@@ -3,15 +3,20 @@ import Table from "../components/Table.jsx";
 import StatusBadge from "../components/StatusBadge.jsx";
 import AddServerModal from "../components/AddServerModal.jsx";
 import { io } from "socket.io-client";
+import { toast } from "sonner";
 
-// Connect socket
-const socket = io(process.env.REACT_APP_API_URL);
+const token = localStorage.getItem("token");
 
-// Convert date → “time ago”
+// 🔐 Secure socket connection
+const socket = io(process.env.REACT_APP_API_URL, {
+    auth: { token }
+});
+
+// Convert "timestamp → 5s ago"
 const timeAgo = (date) => {
     if (!date) return "-";
     const now = new Date();
-    const diff = Math.floor((now - new Date(date)) / 1000); // seconds
+    const diff = Math.floor((now - new Date(date)) / 1000);
 
     if (diff < 5) return "just now";
     if (diff < 60) return `${diff}s ago`;
@@ -26,17 +31,19 @@ const timeAgo = (date) => {
     return `${days}d ago`;
 };
 
+// Parse "3.82 GB" → 3.82
+const parseGB = (value) => {
+    if (!value) return 0;
+    return parseFloat(String(value).replace("GB", "").trim());
+};
+
 export default function Servers() {
     const [servers, setServers] = useState([]);
     const [openAdd, setOpenAdd] = useState(false);
 
-    // Parse "3.82 GB" → 3.82
-    const parseGB = (value) => {
-        if (!value) return 0;
-        return parseFloat(String(value).replace("GB", "").trim());
-    };
-
-    // Map backend → frontend format
+    // ---------------------------------------------
+    // Map Backend → UI format
+    // ---------------------------------------------
     const mapServerData = (data) => {
         return data.map((s) => {
             const memUsed = parseGB(s.memUsed);
@@ -51,29 +58,48 @@ export default function Servers() {
                 status: s.status,
                 cpu: s.cpu ?? 0,
 
-                // Memory data
                 memUsed,
                 memTotal,
                 memPercent:
                     memTotal > 0 ? ((memUsed / memTotal) * 100).toFixed(1) : "-",
 
-                // Disk data
                 diskUsed,
                 diskTotal,
                 diskPercent:
                     diskTotal > 0 ? ((diskUsed / diskTotal) * 100).toFixed(1) : "-",
 
-
-                lastPing: s.lastPing || null
+                lastPing: s.lastPing || null,
             };
         });
     };
 
-    // Fetch initial data
+    // ---------------------------------------------
+    // Secure fetch wrapper
+    // ---------------------------------------------
+    const secureFetch = async (url) => {
+        return fetch(url, {
+            headers: {
+                Authorization: `Bearer ${token}`
+            }
+        });
+    };
+
+    // ---------------------------------------------
+    // Fetch API Data
+    // ---------------------------------------------
     const fetchServers = async () => {
         try {
-            const res = await fetch(`${process.env.REACT_APP_API_URL}/api/v1/server`);
+            const res = await secureFetch(
+                `${process.env.REACT_APP_API_URL}/api/v1/server`
+            );
             const json = await res.json();
+
+            if (json.error === "Invalid or expired token") {
+                toast.error("Session expired. Please login again.");
+                localStorage.removeItem("token");
+                setTimeout(() => (window.location.href = "/login"), 1500);
+                return;
+            }
 
             if (json.status === "success") {
                 setServers(mapServerData(json.data));
@@ -83,31 +109,28 @@ export default function Servers() {
         }
     };
 
-    // Auto-update lastPingAgo every 1 second
+    // ---------------------------------------------
+    // Initial Load + Socket Events
+    // ---------------------------------------------
     useEffect(() => {
-        const interval = setInterval(() => {
-            setServers((prev) =>
-                prev.map((s) => ({
-                    ...s,
-                    lastPingAgo: timeAgo(s.lastPing),
-                }))
-            );
-        }, 1000);
-
-        return () => clearInterval(interval);
-    }, []);
-
-    useEffect(() => {
-        // Load API data first
         fetchServers();
 
-        // Live socket updates
         socket.on("servers_update", (data) => {
             setServers(mapServerData(data));
         });
 
         return () => socket.off("servers_update");
         // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    // ---------------------------------------------
+    // Auto “1s ago” refresh every second
+    // ---------------------------------------------
+    useEffect(() => {
+        const interval = setInterval(() => {
+            setServers((prev) => [...prev]);
+        }, 1000);
+        return () => clearInterval(interval);
     }, []);
 
     return (
@@ -143,11 +166,7 @@ export default function Servers() {
                         key: "cpu",
                         header: "CPU",
                         render: (row) =>
-                            row.status === "DOWN" ? (
-                                <span className="text-slate-500 text-xs">-</span>
-                            ) : (
-                                <span>{row.cpu}%</span>
-                            ),
+                            row.status === "DOWN" ? "-" : `${row.cpu}%`,
                     },
 
                     {
@@ -155,11 +174,11 @@ export default function Servers() {
                         header: "Memory",
                         render: (row) =>
                             row.status === "DOWN" ? (
-                                <span className="text-slate-500 text-xs">-</span>
+                                "-"
                             ) : (
-                                <span>
+                                <>
                                     {row.memPercent}% ({row.memUsed} / {row.memTotal} GB)
-                                </span>
+                                </>
                             ),
                     },
 
@@ -168,28 +187,28 @@ export default function Servers() {
                         header: "Disk",
                         render: (row) =>
                             row.status === "DOWN" ? (
-                                <span className="text-slate-500 text-xs">-</span>
+                                "-"
                             ) : (
-                                <span>
+                                <>
                                     {row.diskPercent}% ({row.diskUsed} / {row.diskTotal} GB)
-                                </span>
+                                </>
                             ),
                     },
 
                     {
-                        key: "lastPingAgo",
+                        key: "lastPing",
                         header: "Last Ping",
-                        render: (row) => <span>{timeAgo(row.lastPing)}</span>,
+                        render: (row) => timeAgo(row.lastPing),
                     },
                 ]}
                 data={servers}
             />
+
             <AddServerModal
                 open={openAdd}
                 onClose={() => setOpenAdd(false)}
                 onSuccess={fetchServers}
             />
-
         </div>
     );
 }

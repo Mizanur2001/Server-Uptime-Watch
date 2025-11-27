@@ -6,68 +6,97 @@ export default function AddWebsiteModal({ open, onClose, onSuccess }) {
     const [serverId, setServerId] = useState("");
     const [servers, setServers] = useState([]);
 
+    const token = localStorage.getItem("token");
+
     useEffect(() => {
         if (open) fetchServers();
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [open]);
 
+    // 🔐 Secure fetch helper
+    const secureFetch = async (url, options = {}) => {
+        return fetch(url, {
+            ...options,
+            headers: {
+                "Content-Type": "application/json",
+                Authorization: `Bearer ${token}`,
+                ...(options.headers || {})
+            }
+        });
+    };
+
+    // Load all servers
     const fetchServers = async () => {
         try {
-            const res = await fetch(`${process.env.REACT_APP_API_URL}/api/v1/server`);
+            const res = await secureFetch(`${process.env.REACT_APP_API_URL}/api/v1/server`);
             const json = await res.json();
-            if (json.status === "success") setServers(json.data);
+
+            if (json.error === "Invalid or expired token") {
+                toast.error("Session expired. Please log in again.");
+                localStorage.removeItem("token");
+                return window.location.href = "/login";
+            }
+
+            if (json.status === "success") {
+                setServers(json.data);
+            }
         } catch (err) {
             console.error("Error loading servers:", err);
         }
     };
 
+    // Domain validation (HTTPS required)
     const validateDomain = () => {
         if (!domain) return false;
 
-        // Must start with https://
         if (!domain.startsWith("https://")) {
-            if (domain.startsWith("http://")) {
-                toast.error("Please use HTTPS — http:// is not allowed.", { duration: 5000 });
-                return false;
-            }
-
-            toast.error("Please include https:// in the domain.", { duration: 5000 });
+            toast.error("Domain must include https://", { duration: 4000 });
             return false;
         }
-
         return true;
     };
 
     const handleSubmit = async () => {
         if (!domain || !serverId) {
-            toast.error("Please fill all fields", { duration: 4000 });
+            toast.error("Please fill all fields");
             return;
         }
 
-        // 🔍 Validate domain protocol (HTTPS required)
         if (!validateDomain()) return;
 
         const payload = { domain, serverId };
 
         try {
-            const res = await fetch(`${process.env.REACT_APP_API_URL}/api/v1/website/add`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(payload),
-            });
+            const res = await secureFetch(
+                `${process.env.REACT_APP_API_URL}/api/v1/website/add`,
+                {
+                    method: "POST",
+                    body: JSON.stringify(payload),
+                }
+            );
 
             const json = await res.json();
 
+            if (json.error === "Invalid or expired token") {
+                toast.error("Session expired. Please log in again.");
+                localStorage.removeItem("token");
+                return window.location.href = "/login";
+            }
+
             if (json.status === "success") {
-                onSuccess();
-                onClose();
-                toast.success("Website added successfully!", { duration: 4000 });
+                toast.success("Website added successfully!");
+
                 setDomain("");
                 setServerId("");
+                onSuccess(); // refresh list
+                onClose();   // close modal
             } else {
-                toast.error(json.error, { duration: 6000 });
+                toast.error(json.error || "Failed to add website");
             }
+
         } catch (err) {
-            toast.error("Failed to add website.", { duration: 4000 });
+            toast.error("Failed to add website. Check console.");
+            console.error(err);
         }
     };
 
@@ -83,14 +112,14 @@ export default function AddWebsiteModal({ open, onClose, onSuccess }) {
                 </p>
 
                 {/* Domain Input */}
-                <label className="text-sm text-slate-300">Full Domain</label>
+                <label className="text-sm text-slate-300">Full Domain (HTTPS required)</label>
                 <input
                     type="text"
                     placeholder="https://example.com"
                     value={domain}
                     onChange={(e) => setDomain(e.target.value)}
                     className="w-full mt-1 mb-3 px-3 py-2 rounded-lg bg-slate-800 text-slate-100 border border-slate-700 
-                               focus:ring-2 focus:ring-emerald-500 outline-none"
+                                focus:ring-2 focus:ring-emerald-500 outline-none"
                 />
 
                 {/* Server Select */}
@@ -99,7 +128,7 @@ export default function AddWebsiteModal({ open, onClose, onSuccess }) {
                     value={serverId}
                     onChange={(e) => setServerId(e.target.value)}
                     className="w-full mt-1 px-3 py-2 rounded-lg bg-slate-800 text-slate-100 border border-slate-700 
-                               focus:ring-2 focus:ring-emerald-500 outline-none"
+                                focus:ring-2 focus:ring-emerald-500 outline-none"
                 >
                     <option value="">Select server</option>
                     {servers.map((s) => (

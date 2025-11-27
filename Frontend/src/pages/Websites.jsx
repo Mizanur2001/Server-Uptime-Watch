@@ -3,14 +3,20 @@ import Table from "../components/Table.jsx";
 import StatusBadge from "../components/StatusBadge.jsx";
 import AddWebsiteModal from "../components/AddWebsiteModal.jsx";
 import { io } from "socket.io-client";
+import { toast } from "sonner";
 
-const socket = io(process.env.REACT_APP_API_URL);
+// -------------------- AUTH TOKEN --------------------
+const token = localStorage.getItem("token");
 
-// Format "x seconds ago"
+// Secure socket with auth
+const socket = io(process.env.REACT_APP_API_URL, {
+    auth: { token }
+});
+
+// -------------------- Time Ago Formatter --------------------
 const timeAgo = (date) => {
     if (!date) return "-";
-    const now = new Date();
-    const diff = Math.floor((now - new Date(date)) / 1000); // seconds
+    const diff = Math.floor((Date.now() - new Date(date)) / 1000);
 
     if (diff < 5) return "just now";
     if (diff < 60) return `${diff}s ago`;
@@ -29,7 +35,7 @@ export default function Websites() {
     const [websites, setWebsites] = useState([]);
     const [modalOpen, setModalOpen] = useState(false);
 
-    // Convert backend → frontend
+    // -------------------- MAP BACKEND → UI --------------------
     const mapWebsiteData = (data) => {
         return data.map((item) => {
             const domainClean = item.domain
@@ -40,26 +46,49 @@ export default function Websites() {
             return {
                 domain: item.domain,
 
-                // Handle both API and cron/socket formats
+                // Handle both API & cron/socket formats:
                 server:
                     item.name && item.ip
                         ? `${item.name} (${item.ip})`
                         : item.serverId
                             ? `${item.serverId.name} (${item.serverId.ip})`
-                            : "Unknown (No IP)",
+                            : "Unknown",
 
                 status: item.status,
                 latency: item.latency,
                 lastCheck: item.lastCheck,
-                icon: `https://www.google.com/s2/favicons?domain=${domainClean}&sz=64`,
+
+                icon: `https://www.google.com/s2/favicons?domain=${domainClean}&sz=64`
             };
         });
     };
 
+    // -------------------- Secure fetch wrapper --------------------
+    const secureFetch = async (url) => {
+        return fetch(url, {
+            headers: {
+                Authorization: `Bearer ${token}`,
+            },
+        });
+    };
+
+    // -------------------- Initial API Load --------------------
     const fetchWebsites = async () => {
         try {
-            const res = await fetch(`${process.env.REACT_APP_API_URL}/api/v1/website`);
+            const res = await secureFetch(
+                `${process.env.REACT_APP_API_URL}/api/v1/website`
+            );
+
             const json = await res.json();
+
+            if (json.error === "Invalid or expired token") {
+                toast.error("Session expired. Please log in again.");
+                setTimeout(() => {
+                    localStorage.removeItem("token");
+                    window.location.href = "/login";
+                }, 2000);
+                return;
+            }
 
             if (json.status === "success") {
                 setWebsites(mapWebsiteData(json.data));
@@ -69,39 +98,40 @@ export default function Websites() {
         }
     };
 
+    // -------------------- Socket & Initial Load --------------------
     useEffect(() => {
-        // First load
         fetchWebsites();
 
-        // Live updates
         socket.on("websites_update", (data) => {
             setWebsites(mapWebsiteData(data));
         });
 
-        return () => {
-            socket.off("websites_update");
-        };
+        return () => socket.off("websites_update");
+
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, []);
 
-    // Auto-update "x seconds ago" every 1 second
+    // -------------------- Auto-refresh the “x seconds ago” text --------------------
     useEffect(() => {
-        const interval = setInterval(() => {
-            setWebsites((prev) => [...prev]);
+        const timer = setInterval(() => {
+            setWebsites((prev) => [...prev]); // re-render
         }, 1000);
-        return () => clearInterval(interval);
+        return () => clearInterval(timer);
     }, []);
 
     return (
         <div className="space-y-6">
             <div className="flex items-center justify-between gap-2">
                 <div>
-                    <h2 className="text-lg font-semibold text-slate-50">Websites</h2>
+                    <h2 className="text-lg font-semibold text-slate-50">
+                        Websites
+                    </h2>
                     <p className="text-sm text-slate-400 mt-1">
                         Monitored websites and their current status.
                     </p>
                 </div>
-                <button className="text-sm px-3 py-1.5 rounded-lg bg-emerald-500/90 text-slate-950 font-medium hover:bg-emerald-400 transition"
+                <button
+                    className="text-sm px-3 py-1.5 rounded-lg bg-emerald-500/90 text-slate-950 font-medium hover:bg-emerald-400 transition"
                     onClick={() => setModalOpen(true)}
                 >
                     + Add Website
@@ -116,8 +146,8 @@ export default function Websites() {
                         render: (row) => (
                             <img
                                 src={row.icon}
+                                className="w-6 h-6 rounded border border-slate-700"
                                 alt="favicon"
-                                className="w-6 h-6 rounded-sm border border-slate-700"
                             />
                         ),
                     },
@@ -145,16 +175,17 @@ export default function Websites() {
                     {
                         key: "lastCheck",
                         header: "Last Check",
-                        render: (row) => <span>{timeAgo(row.lastCheck)}</span>,
+                        render: (row) => timeAgo(row.lastCheck),
                     },
                 ]}
                 data={websites}
             />
+
             {/* Modal */}
             <AddWebsiteModal
                 open={modalOpen}
                 onClose={() => setModalOpen(false)}
-                onSuccess={() => fetchWebsites()}
+                onSuccess={fetchWebsites}
             />
         </div>
     );
