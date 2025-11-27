@@ -15,6 +15,7 @@ router.get('/', (req, res) => {
 
 router.use("/api/v1/server", require("./server.routes"));
 router.use("/api/v1/website", require("./website.routes"));
+router.use("/api/v1/auth", require("./auth.routes"));
 
 
 // No router found
