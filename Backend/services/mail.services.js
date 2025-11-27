@@ -1,6 +1,7 @@
 require("dotenv").config();
 const nodemailer = require("nodemailer");
-const { serverDownTemplate } = require("../public/template/mail/alert.template");
+const { serverDownTemplate } = require("../public/template/mail/serverAlert.template");
+const { websiteDownTemplate } = require("../public/template/mail/webAlert.template");
 
 const transpoter = nodemailer.createTransport({
     host: "smtp.hostinger.com",
@@ -28,4 +29,19 @@ module.exports = {
             return false;
         }
     },
+    sendWebsiteDownEmail: async (name, domain) => {
+        try {
+            const option = {
+                from: "Website Alert <" + process.env.EMAIL_USER + ">",
+                to: process.env.ALERT_EMAIL,
+                subject: `🚨 Website DOWN: ${domain} (${name})`,
+                html: websiteDownTemplate(name, domain),
+            };
+            const info = await transpoter.sendMail(option);
+            return true;
+        } catch (e) {
+            console.log(e);
+            return false;
+        }
+    }
 };

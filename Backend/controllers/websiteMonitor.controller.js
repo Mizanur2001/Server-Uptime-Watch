@@ -1,6 +1,7 @@
 const axios = require("axios");
 const Website = require("../models/website.models");
 const { HandleError, HandleSuccess, HandleServerError } = require("../controllers/Base.Controller");
+const { Mail } = require("../services/index.services");
 
 module.exports = {
   checkWebsites: async (req, res, cronMode = false) => {
@@ -21,7 +22,7 @@ module.exports = {
 
           await Website.updateOne(
             { _id: w._id },
-            { status: "UP", latency, lastCheck: new Date() }
+            { status: "UP", latency, lastCheck: new Date(), alertSent: false }
           );
 
           results.push({
@@ -34,10 +35,26 @@ module.exports = {
           });
 
         } catch (err) {
-          await Website.updateOne(
-            { _id: w._id },
-            { status: "DOWN", latency: null, lastCheck: new Date() }
-          );
+
+          if (!w.alertSent) {
+            // Send Email Alert 
+            await Mail.sendWebsiteDownEmail(w.serverId?.name || "", w.domain);
+
+            await Website.updateOne(
+              { _id: w._id },
+              {
+                status: "DOWN",
+                latency: null,
+                lastCheck: new Date(),
+                alertSent: true
+              }
+            );
+          } else {
+            await Website.updateOne(
+              { _id: w._id },
+              { status: "DOWN", latency: null, lastCheck: new Date() }
+            );
+          }
 
           results.push({
             domain: w.domain,
@@ -48,8 +65,6 @@ module.exports = {
             lastCheck: new Date(),
             error: err.message
           });
-
-          // ::::::::::::::TODO:::::::::::: Trigger alert only on state change
         }
       }
 

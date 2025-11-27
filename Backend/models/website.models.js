@@ -6,6 +6,7 @@ const websiteSchema = new mongoose.Schema({
   status: { type: String, default: "UNKNOWN" },
   latency: Number,
   lastCheck: Date,
+  alertSent: { type: Boolean, default: false },
 });
 
 module.exports = mongoose.model("Website", websiteSchema);
