@@ -36,3 +36,66 @@
     transform: rotate(360deg);
   }
 }
+
+/* 1. Fan Rotation */
+@keyframes spin-continuous {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+.animate-fan {
+  animation: spin-continuous 3s linear infinite;
+}
+
+.animate-fan-fast {
+  animation: spin-continuous 1.5s linear infinite; /* One fan spins faster for realism */
+}
+
+/* 2. Network Light Blinking */
+@keyframes flash {
+  0%, 100% { opacity: 0.2; }
+  50% { opacity: 1; box-shadow: 0 0 10px currentColor; }
+}
+
+.animate-flash {
+  animation: flash 0.5s infinite alternate;
+}
+
+/* 3. Subtle Pulse for Status */
+@keyframes soft-pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+.animate-soft-pulse {
+  animation: soft-pulse 2s ease-in-out infinite;
+}
+
+/* --- CUSTOM SCROLLBAR STYLING --- */
+
+/* Width of the scrollbar */
+::-webkit-scrollbar {
+  width: 6px;   /* Vertical scrollbar width */
+  height: 6px;  /* Horizontal scrollbar height */
+}
+
+/* The "Track" (background) */
+::-webkit-scrollbar-track {
+  background: transparent; /* Makes it blend into your dark background */
+}
+
+/* The "Thumb" (the moving part) */
+::-webkit-scrollbar-thumb {
+  background: #334155; /* Slate-700: subtle dark grey */
+  border-radius: 9999px; /* Fully rounded pills */
+  border: 1px solid #0f172a; /* Thin border to separate it from content */
+}
+
+/* Hover State */
+::-webkit-scrollbar-thumb:hover {
+  background: #06b6d4; /* Cyan-500: Glows when you grab it */
+}
+
+/* Corner (where vertical meets horizontal) */
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
