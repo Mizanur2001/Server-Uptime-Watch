@@ -10,6 +10,7 @@
 #       uptime_agent
 
 #===========================================
+
 server {
     listen 80;
     server_name 159.89.161.8;
@@ -34,6 +35,8 @@ server {
 #=======================================
 
 uptime_agent
+
+pm2 start index.js --name uptime_agent
 
 #=======================================
 
