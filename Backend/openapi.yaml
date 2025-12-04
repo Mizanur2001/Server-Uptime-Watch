@@ -1,0 +1,334 @@
+openapi: 3.0.3
+info:
+  title: Server Uptime Watch API
+  version: 1.0.0
+  description: >
+    Backend for Martian Corp’s uptime platform. Authenticated routes require a JWT
+    issued by the login endpoint.
+servers:
+  - url: https://serverbackend.martiancorp.in
+    description: Production
+  - url: http://localhost:4000
+    description: Local development
+tags:
+  - name: System
+    description: Readiness probing
+  - name: Auth
+    description: Authentication flows
+  - name: Servers
+    description: Server inventory + health checks
+  - name: Websites
+    description: Website inventory + uptime checks
+paths:
+  /:
+    get:
+      tags: [System]
+      summary: Heartbeat
+      responses:
+        '200':
+          description: Service is running
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status: { type: string, example: success }
+                  code: { type: integer, example: 200 }
+                  message: { type: string, example: API Server is Running Successfully }
+  /api/v1/auth/login:
+    post:
+      tags: [Auth]
+      summary: Obtain JWT
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Login succeeded
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponseBase'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/AuthToken'
+        '202': { $ref: '#/components/responses/ValidationError' }
+        '500': { $ref: '#/components/responses/ServerError' }
+  /api/v1/server:
+    get:
+      tags: [Servers]
+      summary: List servers
+      security: [ { BearerAuth: [] } ]
+      responses:
+        '200':
+          description: Servers fetched
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponseBase'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: '#/components/schemas/Server' }
+        '401': { $ref: '#/components/responses/UnauthorizedError' }
+        '500': { $ref: '#/components/responses/ServerError' }
+  /api/v1/server/add:
+    post:
+      tags: [Servers]
+      summary: Register server
+      security: [ { BearerAuth: [] } ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateServerRequest'
+      responses:
+        '200':
+          description: Server stored
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponseBase'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Server'
+        '202': { $ref: '#/components/responses/ValidationError' }
+        '401': { $ref: '#/components/responses/UnauthorizedError' }
+        '500': { $ref: '#/components/responses/ServerError' }
+  /api/v1/server/check:
+    get:
+      tags: [Servers]
+      summary: Run server health sweep
+      security: [ { BearerAuth: [] } ]
+      responses:
+        '200':
+          description: Check results
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponseBase'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: '#/components/schemas/ServerCheckResult' }
+        '202': { $ref: '#/components/responses/ValidationError' }
+        '401': { $ref: '#/components/responses/UnauthorizedError' }
+        '500': { $ref: '#/components/responses/ServerError' }
+  /api/v1/website:
+    get:
+      tags: [Websites]
+      summary: List websites
+      security: [ { BearerAuth: [] } ]
+      responses:
+        '200':
+          description: Websites fetched
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponseBase'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: '#/components/schemas/Website' }
+        '401': { $ref: '#/components/responses/UnauthorizedError' }
+        '500': { $ref: '#/components/responses/ServerError' }
+  /api/v1/website/add:
+    post:
+      tags: [Websites]
+      summary: Register website
+      description: Validates DNS A record matches the selected server IP.
+      security: [ { BearerAuth: [] } ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddWebsiteRequest'
+      responses:
+        '200':
+          description: Website stored
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponseBase'
+                  - type: object
+                    properties:
+                      data:
+                        $ref: '#/components/schemas/Website'
+        '202': { $ref: '#/components/responses/ValidationError' }
+        '401': { $ref: '#/components/responses/UnauthorizedError' }
+        '500': { $ref: '#/components/responses/ServerError' }
+  /api/v1/website/check:
+    get:
+      tags: [Websites]
+      summary: Run website uptime sweep
+      security: [ { BearerAuth: [] } ]
+      responses:
+        '200':
+          description: Check results
+          content:
+            application/json:
+              schema:
+                allOf:
+                  - $ref: '#/components/schemas/SuccessResponseBase'
+                  - type: object
+                    properties:
+                      data:
+                        type: array
+                        items: { $ref: '#/components/schemas/WebsiteCheckResult' }
+        '202': { $ref: '#/components/responses/ValidationError' }
+        '401': { $ref: '#/components/responses/UnauthorizedError' }
+        '500': { $ref: '#/components/responses/ServerError' }
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+  schemas:
+    SuccessResponseBase:
+      type: object
+      required: [code, status, message]
+      properties:
+        code: { type: integer, example: 200 }
+        status: { type: string, example: success }
+        message: { type: string, example: Login Successful. }
+    ErrorResponse:
+      type: object
+      required: [code, status, error]
+      properties:
+        code: { type: integer }
+        status: { type: string }
+        error: { type: string }
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email: { type: string, format: email }
+        password: { type: string, format: password }
+    AuthToken:
+      type: object
+      required: [token]
+      properties:
+        token:
+          type: string
+          description: Use as `Authorization: Bearer <token>`
+    CreateServerRequest:
+      type: object
+      required: [name, ip, apiKey]
+      properties:
+        name: { type: string, example: Payment Node 01 }
+        ip: { type: string, example: 10.0.10.24 }
+        port: { type: integer, default: 4000 }
+        apiKey: { type: string, description: Shared secret for `/health` }
+    Server:
+      type: object
+      properties:
+        _id: { type: string, readOnly: true }
+        name: { type: string }
+        ip: { type: string }
+        port: { type: integer }
+        apiKey: { type: string, writeOnly: true }
+        status: { type: string, enum: [UNKNOWN, UP, DOWN] }
+        lastPing: { type: string, format: date-time, nullable: true }
+        cpu: { type: number, nullable: true }
+        memUsed: { type: number, nullable: true, description: GB }
+        memTotal: { type: number, nullable: true }
+        diskUsed: { type: number, nullable: true }
+        diskTotal: { type: number, nullable: true }
+        alertSent: { type: boolean }
+    ServerCheckResult:
+      type: object
+      properties:
+        id: { type: string }
+        name: { type: string }
+        status: { type: string, enum: [UP, DOWN] }
+        cpu: { type: number, nullable: true }
+        memUsed: { type: string, description: e.g. "2.50 GB" }
+        memTotal: { type: string }
+        diskUsed: { type: string }
+        diskTotal: { type: string }
+        ip: { type: string }
+        lastPing: { type: string, format: date-time }
+        error: { type: string, nullable: true }
+    AddWebsiteRequest:
+      type: object
+      required: [domain, serverId]
+      properties:
+        domain: { type: string, format: uri, example: https://status.martiancorp.in }
+        serverId: { type: string, description: MongoDB ObjectId }
+    Website:
+      type: object
+      properties:
+        _id: { type: string, readOnly: true }
+        domain: { type: string, format: uri }
+        serverId:
+          oneOf:
+            - type: string
+            - $ref: '#/components/schemas/Server'
+        status: { type: string, enum: [UNKNOWN, UP, DOWN] }
+        latency: { type: integer, nullable: true, description: Milliseconds }
+        lastCheck: { type: string, format: date-time, nullable: true }
+        alertSent: { type: boolean }
+    WebsiteCheckResult:
+      type: object
+      properties:
+        domain: { type: string }
+        status: { type: string, enum: [UP, DOWN] }
+        latency: { type: integer, nullable: true }
+        name: { type: string, description: Parent server name }
+        ip: { type: string, description: Parent server IP }
+        lastCheck: { type: string, format: date-time }
+        error: { type: string, nullable: true }
+  responses:
+    ValidationError:
+      description: Validation/business-rule failure
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/ErrorResponse'
+              - type: object
+                properties:
+                  code: { example: 202 }
+                  status: { example: error }
+                  error: { example: Missing required fields: name, ip, apiKey }
+    UnauthorizedError:
+      description: Missing/invalid bearer token
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/ErrorResponse'
+              - type: object
+                properties:
+                  code: { example: 401 }
+                  status: { example: Unauthorized }
+                  error: { example: Unauthorized API call. }
+    ServerError:
+      description: Unexpected exception
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/ErrorResponse'
+              - type: object
+                properties:
+                  code: { example: 500 }
+                  status: { example: Server Error }
+                  error: { example: Something went wrong. Please contact support team. }

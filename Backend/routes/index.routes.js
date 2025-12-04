@@ -1,5 +1,8 @@
 const express = require('express')
 const router = express.Router()
+const path = require('path');
+const swaggerUi = require('swagger-ui-express');
+const YAML = require('yamljs');
 const { ServerMonitor } = require('../controllers/index.controller')
 
 
@@ -11,6 +14,10 @@ router.get('/', (req, res) => {
         message: "API Server is Running Successfully"
     })
 })
+
+// OpenAPI Specification route
+const swaggerDocument = YAML.load(path.join(__dirname, '..', 'openapi.yaml'));
+router.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
 
 router.use("/api/v1/server", require("./server.routes"));
