@@ -19,6 +19,10 @@ router.get('/', (req, res) => {
 const swaggerDocument = YAML.load(path.join(__dirname, '..', 'openapi.yaml'));
 router.use('/docs', swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 
+router.get('/openapi.yaml', (req, res) => {
+  res.sendFile(path.join(__dirname, '..', 'openapi.yaml'));
+});
+
 
 router.use("/api/v1/server", require("./server.routes"));
 router.use("/api/v1/website", require("./website.routes"));
