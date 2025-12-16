@@ -5,20 +5,23 @@ info:
   description: >
     Backend for Martian Corp’s uptime platform. Authenticated routes require a JWT
     issued by the login endpoint.
+
 servers:
   - url: https://serverbackend.martiancorp.in
     description: Production
   - url: http://localhost:4000
     description: Local development
+
 tags:
   - name: System
     description: Readiness probing
   - name: Auth
     description: Authentication flows
   - name: Servers
-    description: Server inventory + health checks
+    description: Server inventory & health checks
   - name: Websites
-    description: Website inventory + uptime checks
+    description: Website inventory & uptime checks
+
 paths:
   /:
     get:
@@ -35,6 +38,7 @@ paths:
                   status: { type: string, example: success }
                   code: { type: integer, example: 200 }
                   message: { type: string, example: API Server is Running Successfully }
+
   /api/v1/auth/login:
     post:
       tags: [Auth]
@@ -57,13 +61,17 @@ paths:
                     properties:
                       data:
                         $ref: '#/components/schemas/AuthToken'
-        '202': { $ref: '#/components/responses/ValidationError' }
-        '500': { $ref: '#/components/responses/ServerError' }
+        '202':
+          $ref: '#/components/responses/ValidationError'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
   /api/v1/server:
     get:
       tags: [Servers]
       summary: List servers
-      security: [ { BearerAuth: [] } ]
+      security:
+        - BearerAuth: []
       responses:
         '200':
           description: Servers fetched
@@ -77,13 +85,17 @@ paths:
                       data:
                         type: array
                         items: { $ref: '#/components/schemas/Server' }
-        '401': { $ref: '#/components/responses/UnauthorizedError' }
-        '500': { $ref: '#/components/responses/ServerError' }
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
   /api/v1/server/add:
     post:
       tags: [Servers]
       summary: Register server
-      security: [ { BearerAuth: [] } ]
+      security:
+        - BearerAuth: []
       requestBody:
         required: true
         content:
@@ -102,14 +114,19 @@ paths:
                     properties:
                       data:
                         $ref: '#/components/schemas/Server'
-        '202': { $ref: '#/components/responses/ValidationError' }
-        '401': { $ref: '#/components/responses/UnauthorizedError' }
-        '500': { $ref: '#/components/responses/ServerError' }
+        '202':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
   /api/v1/server/check:
     get:
       tags: [Servers]
       summary: Run server health sweep
-      security: [ { BearerAuth: [] } ]
+      security:
+        - BearerAuth: []
       responses:
         '200':
           description: Check results
@@ -123,14 +140,19 @@ paths:
                       data:
                         type: array
                         items: { $ref: '#/components/schemas/ServerCheckResult' }
-        '202': { $ref: '#/components/responses/ValidationError' }
-        '401': { $ref: '#/components/responses/UnauthorizedError' }
-        '500': { $ref: '#/components/responses/ServerError' }
+        '202':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
   /api/v1/website:
     get:
       tags: [Websites]
       summary: List websites
-      security: [ { BearerAuth: [] } ]
+      security:
+        - BearerAuth: []
       responses:
         '200':
           description: Websites fetched
@@ -144,14 +166,18 @@ paths:
                       data:
                         type: array
                         items: { $ref: '#/components/schemas/Website' }
-        '401': { $ref: '#/components/responses/UnauthorizedError' }
-        '500': { $ref: '#/components/responses/ServerError' }
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
   /api/v1/website/add:
     post:
       tags: [Websites]
       summary: Register website
       description: Validates DNS A record matches the selected server IP.
-      security: [ { BearerAuth: [] } ]
+      security:
+        - BearerAuth: []
       requestBody:
         required: true
         content:
@@ -170,14 +196,19 @@ paths:
                     properties:
                       data:
                         $ref: '#/components/schemas/Website'
-        '202': { $ref: '#/components/responses/ValidationError' }
-        '401': { $ref: '#/components/responses/UnauthorizedError' }
-        '500': { $ref: '#/components/responses/ServerError' }
+        '202':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
   /api/v1/website/check:
     get:
       tags: [Websites]
       summary: Run website uptime sweep
-      security: [ { BearerAuth: [] } ]
+      security:
+        - BearerAuth: []
       responses:
         '200':
           description: Check results
@@ -191,15 +222,20 @@ paths:
                       data:
                         type: array
                         items: { $ref: '#/components/schemas/WebsiteCheckResult' }
-        '202': { $ref: '#/components/responses/ValidationError' }
-        '401': { $ref: '#/components/responses/UnauthorizedError' }
-        '500': { $ref: '#/components/responses/ServerError' }
+        '202':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '500':
+          $ref: '#/components/responses/ServerError'
+
 components:
   securitySchemes:
     BearerAuth:
       type: http
       scheme: bearer
       bearerFormat: JWT
+
   schemas:
     SuccessResponseBase:
       type: object
@@ -208,6 +244,7 @@ components:
         code: { type: integer, example: 200 }
         status: { type: string, example: success }
         message: { type: string, example: Login Successful. }
+
     ErrorResponse:
       type: object
       required: [code, status, error]
@@ -215,19 +252,22 @@ components:
         code: { type: integer }
         status: { type: string }
         error: { type: string }
+
     LoginRequest:
       type: object
       required: [email, password]
       properties:
         email: { type: string, format: email }
         password: { type: string, format: password }
+
     AuthToken:
       type: object
       required: [token]
       properties:
         token:
           type: string
-          description: Use as `Authorization: Bearer <token>`
+          description: "Use as Authorization: Bearer <token>"
+
     CreateServerRequest:
       type: object
       required: [name, ip, apiKey]
@@ -235,7 +275,8 @@ components:
         name: { type: string, example: Payment Node 01 }
         ip: { type: string, example: 10.0.10.24 }
         port: { type: integer, default: 4000 }
-        apiKey: { type: string, description: Shared secret for `/health` }
+        apiKey: { type: string, description: "Shared secret for /health endpoint" }
+
     Server:
       type: object
       properties:
@@ -247,11 +288,12 @@ components:
         status: { type: string, enum: [UNKNOWN, UP, DOWN] }
         lastPing: { type: string, format: date-time, nullable: true }
         cpu: { type: number, nullable: true }
-        memUsed: { type: number, nullable: true, description: GB }
+        memUsed: { type: number, nullable: true }
         memTotal: { type: number, nullable: true }
         diskUsed: { type: number, nullable: true }
         diskTotal: { type: number, nullable: true }
         alertSent: { type: boolean }
+
     ServerCheckResult:
       type: object
       properties:
@@ -259,19 +301,21 @@ components:
         name: { type: string }
         status: { type: string, enum: [UP, DOWN] }
         cpu: { type: number, nullable: true }
-        memUsed: { type: string, description: e.g. "2.50 GB" }
+        memUsed: { type: string }
         memTotal: { type: string }
         diskUsed: { type: string }
         diskTotal: { type: string }
         ip: { type: string }
         lastPing: { type: string, format: date-time }
         error: { type: string, nullable: true }
+
     AddWebsiteRequest:
       type: object
       required: [domain, serverId]
       properties:
-        domain: { type: string, format: uri, example: https://status.martiancorp.in }
-        serverId: { type: string, description: MongoDB ObjectId }
+        domain: { type: string, format: uri }
+        serverId: { type: string }
+
     Website:
       type: object
       properties:
@@ -282,22 +326,24 @@ components:
             - type: string
             - $ref: '#/components/schemas/Server'
         status: { type: string, enum: [UNKNOWN, UP, DOWN] }
-        latency: { type: integer, nullable: true, description: Milliseconds }
+        latency: { type: integer, nullable: true }
         lastCheck: { type: string, format: date-time, nullable: true }
         alertSent: { type: boolean }
+
     WebsiteCheckResult:
       type: object
       properties:
         domain: { type: string }
         status: { type: string, enum: [UP, DOWN] }
         latency: { type: integer, nullable: true }
-        name: { type: string, description: Parent server name }
-        ip: { type: string, description: Parent server IP }
+        name: { type: string }
+        ip: { type: string }
         lastCheck: { type: string, format: date-time }
         error: { type: string, nullable: true }
+
   responses:
     ValidationError:
-      description: Validation/business-rule failure
+      description: Validation/business rule failure
       content:
         application/json:
           schema:
@@ -307,7 +353,9 @@ components:
                 properties:
                   code: { example: 202 }
                   status: { example: error }
-                  error: { example: Missing required fields: name, ip, apiKey }
+                  error:
+                    example: "Missing required fields: name, ip, apiKey"
+
     UnauthorizedError:
       description: Missing/invalid bearer token
       content:
@@ -319,7 +367,9 @@ components:
                 properties:
                   code: { example: 401 }
                   status: { example: Unauthorized }
-                  error: { example: Unauthorized API call. }
+                  error:
+                    example: "Unauthorized API call."
+
     ServerError:
       description: Unexpected exception
       content:
@@ -331,4 +381,5 @@ components:
                 properties:
                   code: { example: 500 }
                   status: { example: Server Error }
-                  error: { example: Something went wrong. Please contact support team. }
+                  error:
+                    example: "Something went wrong. Please contact support team."

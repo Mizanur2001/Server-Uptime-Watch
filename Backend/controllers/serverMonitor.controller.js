@@ -58,7 +58,7 @@ module.exports = {
 
           if (!s.alertSent) {
             // Send Email
-            await Mail.sendServerDownEmail(s.name, s.ip);
+            // await Mail.sendServerDownEmail(s.name, s.ip);
 
             await Server.updateOne(
               { _id: s._id },

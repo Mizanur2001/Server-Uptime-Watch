@@ -38,7 +38,7 @@ module.exports = {
 
           if (!w.alertSent) {
             // Send Email Alert 
-            await Mail.sendWebsiteDownEmail(w.serverId?.name || "", w.domain);
+            // await Mail.sendWebsiteDownEmail(w.serverId?.name || "", w.domain);
 
             await Website.updateOne(
               { _id: w._id },
