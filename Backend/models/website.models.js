@@ -6,6 +6,7 @@ const websiteSchema = new mongoose.Schema({
   status: { type: String, default: "UNKNOWN" },
   latency: Number,
   lastCheck: Date,
+  downSince: { type: Date, default: null },
   alertSent: { type: Boolean, default: false },
 });
 

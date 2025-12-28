@@ -329,6 +329,7 @@ components:
         status: { type: string, enum: [UNKNOWN, UP, DOWN] }
         latency: { type: integer, nullable: true }
         lastCheck: { type: string, format: date-time, nullable: true }
+        downSince: { type: string, format: date-time, nullable: true }
         alertSent: { type: boolean }
 
     WebsiteCheckResult:

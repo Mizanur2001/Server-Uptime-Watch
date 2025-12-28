@@ -3,6 +3,8 @@ const Website = require("../models/website.models");
 const { HandleError, HandleSuccess, HandleServerError } = require("../controllers/Base.Controller");
 const { Mail } = require("../services/index.services");
 
+const DOWN_CONFIRMATION_MS = 2 * 60 * 1000; // 2 minutes
+
 module.exports = {
   checkWebsites: async (req, res, cronMode = false) => {
     try {
@@ -22,7 +24,7 @@ module.exports = {
 
           await Website.updateOne(
             { _id: w._id },
-            { status: "UP", latency, lastCheck: new Date(), alertSent: false }
+            { status: "UP", latency, lastCheck: new Date(), alertSent: false, downSince: null }
           );
 
           results.push({
@@ -35,25 +37,36 @@ module.exports = {
           });
 
         } catch (err) {
+          const now = new Date();
+          const downSince = w.downSince ? new Date(w.downSince) : null;
+          const firstTimeDown = w.status !== "DOWN" || !downSince;
 
-          if (!w.alertSent) {
-            // Send Email Alert 
-            // await Mail.sendWebsiteDownEmail(w.serverId?.name || "", w.domain);
-
+          if (firstTimeDown) {
+            // Mark DOWN, start timer; do NOT email yet
             await Website.updateOne(
               { _id: w._id },
               {
                 status: "DOWN",
                 latency: null,
-                lastCheck: new Date(),
-                alertSent: true
+                lastCheck: now,
+                downSince: now,
+                alertSent: false,
               }
             );
           } else {
-            await Website.updateOne(
-              { _id: w._id },
-              { status: "DOWN", latency: null, lastCheck: new Date() }
-            );
+            const downForMs = now - downSince;
+            const shouldEmail = cronMode === true && !w.alertSent && downForMs >= DOWN_CONFIRMATION_MS;
+
+            const update = { status: "DOWN", latency: null, lastCheck: now };
+
+            if (shouldEmail) {
+              const emailed = await Mail.sendWebsiteDownEmail(w.serverId?.name || "", w.domain);
+              if (emailed) {
+                update.alertSent = true;
+              }
+            }
+
+            await Website.updateOne({ _id: w._id }, update);
           }
 
           results.push({
@@ -62,7 +75,7 @@ module.exports = {
             latency: null,
             name: w.serverId?.name || "",
             ip: w.serverId?.ip || "",
-            lastCheck: new Date(),
+            lastCheck: now,
             error: err.message
           });
         }
