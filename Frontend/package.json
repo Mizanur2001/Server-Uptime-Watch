@@ -19,7 +19,8 @@
     "start": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "test": "vitest run"
+    "test": "vitest run",
+    "production": "npx --yes serve -s dist -l 9002"
   },
   "browserslist": {
     "production": [
