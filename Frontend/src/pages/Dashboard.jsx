@@ -9,7 +9,7 @@ import { toast } from "sonner";
 const token = localStorage.getItem("token");
 
 const socket = token
-  ? io(process.env.REACT_APP_API_URL, {
+  ? io(import.meta.env.REACT_APP_API_URL, {
       auth: { token },
       autoConnect: true,
     })
@@ -221,7 +221,7 @@ export default function Dashboard() {
 
   const fetchDashboardData = async () => {
     try {
-      const serverRes = await secureFetch(`${process.env.REACT_APP_API_URL}/api/v1/server`);
+      const serverRes = await secureFetch(`${import.meta.env.REACT_APP_API_URL}/api/v1/server`);
       const serverJson = await serverRes.json();
 
       if (serverJson.error === "Invalid or expired token") {
@@ -233,7 +233,7 @@ export default function Dashboard() {
 
       if (serverJson.status === "success") setServers(mapServerData(serverJson.data));
 
-      const siteRes = await secureFetch(`${process.env.REACT_APP_API_URL}/api/v1/website`);
+      const siteRes = await secureFetch(`${import.meta.env.REACT_APP_API_URL}/api/v1/website`);
       const siteJson = await siteRes.json();
       if (siteJson.status === "success") setWebsites(mapWebsiteData(siteJson.data));
     } catch (err) {

@@ -9,7 +9,7 @@ export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const version = process.env.REACT_APP_VERSION;
+  const version = import.meta.env.REACT_APP_VERSION;
 
   const handleLogin = async (e) => {
     e.preventDefault(); // Prevent form submission refresh
@@ -22,7 +22,7 @@ export default function Login() {
     setLoading(true);
 
     try {
-      const res = await fetch(`${process.env.REACT_APP_API_URL}/api/v1/auth/login`, {
+      const res = await fetch(`${import.meta.env.REACT_APP_API_URL}/api/v1/auth/login`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password }),

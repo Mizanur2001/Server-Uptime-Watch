@@ -14,7 +14,7 @@ import {
 const token = localStorage.getItem("token");
 
 const socket = token
-  ? io(process.env.REACT_APP_API_URL, { auth: { token } })
+  ? io(import.meta.env.REACT_APP_API_URL, { auth: { token } })
   : null;
 
 const timeAgo = (date) => {
@@ -189,7 +189,7 @@ export default function Websites() {
 
   const fetchWebsites = async () => {
     try {
-      const res = await secureFetch(`${process.env.REACT_APP_API_URL}/api/v1/website`);
+      const res = await secureFetch(`${import.meta.env.REACT_APP_API_URL}/api/v1/website`);
       const json = await res.json();
 
       if (json.error === "Invalid or expired token") {

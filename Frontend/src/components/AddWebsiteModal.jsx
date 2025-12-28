@@ -28,7 +28,7 @@ export default function AddWebsiteModal({ open, onClose, onSuccess }) {
     // Load all servers
     const fetchServers = async () => {
         try {
-            const res = await secureFetch(`${process.env.REACT_APP_API_URL}/api/v1/server`);
+            const res = await secureFetch(`${import.meta.env.REACT_APP_API_URL}/api/v1/server`);
             const json = await res.json();
 
             if (json.error === "Invalid or expired token") {
@@ -68,7 +68,7 @@ export default function AddWebsiteModal({ open, onClose, onSuccess }) {
 
         try {
             const res = await secureFetch(
-                `${process.env.REACT_APP_API_URL}/api/v1/website/add`,
+                `${import.meta.env.REACT_APP_API_URL}/api/v1/website/add`,
                 {
                     method: "POST",
                     body: JSON.stringify(payload),

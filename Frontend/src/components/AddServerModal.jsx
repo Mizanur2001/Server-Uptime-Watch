@@ -36,7 +36,7 @@ export default function AddServerModal({ open, onClose, onSuccess }) {
         const token = localStorage.getItem("token");
 
         try {
-            const res = await fetch(`${process.env.REACT_APP_API_URL}/api/v1/server/add`, {
+            const res = await fetch(`${import.meta.env.REACT_APP_API_URL}/api/v1/server/add`, {
                 method: "POST",
                 headers: {
                     "Content-Type": "application/json",
