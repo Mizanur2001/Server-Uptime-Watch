@@ -3,6 +3,8 @@ const Server = require("../models/server.models");
 const { HandleError, HandleSuccess, HandleServerError } = require("../controllers/Base.Controller");
 const { Mail } = require("../services/index.services");
 
+const DOWN_CONFIRMATION_MS = 2 * 60 * 1000; // 2 minutes
+
 module.exports = {
   checkServers: async (req, res, cronMode = false) => {
     try {
@@ -38,6 +40,7 @@ module.exports = {
               diskUsed: diskUsedGB,
               diskTotal: diskTotalGB,
               alertSent: false,
+              downSince: null,
             }
           );
 
@@ -55,26 +58,35 @@ module.exports = {
           });
 
         } catch (err) {
+          const now = new Date();
+          const downSince = s.downSince ? new Date(s.downSince) : null;
+          const firstTimeDown = s.status !== "DOWN" || !downSince;
 
-          if (!s.alertSent) {
-            // Send Email
-            // await Mail.sendServerDownEmail(s.name, s.ip);
-
+          if (firstTimeDown) {
+            // Mark DOWN, start timer; do NOT email yet
             await Server.updateOne(
               { _id: s._id },
               {
                 status: "DOWN",
-                lastPing: new Date(),
-                alertSent: true
+                lastPing: now,
+                downSince: now,
+                alertSent: false,
               }
             );
-
           } else {
+            const downForMs = now - downSince;
+            const shouldEmail = cronMode === true && !s.alertSent && downForMs >= DOWN_CONFIRMATION_MS;
 
-            await Server.updateOne(
-              { _id: s._id },
-              { status: "DOWN", lastPing: new Date() }
-            );
+            const update = { status: "DOWN", lastPing: now };
+
+            if (shouldEmail) {
+              const emailed = await Mail.sendServerDownEmail(s.name, s.ip);
+              if (emailed) {
+                update.alertSent = true;
+              }
+            }
+
+            await Server.updateOne({ _id: s._id }, update);
           }
 
           results.push({

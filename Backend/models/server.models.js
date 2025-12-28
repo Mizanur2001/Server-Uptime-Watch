@@ -7,6 +7,7 @@ const serverSchema = new mongoose.Schema({
     apiKey: String,
     status: { type: String, default: "UNKNOWN" },
     lastPing: Date,
+    downSince: { type: Date, default: null },
     cpu: Number,
     memUsed: Number,
     memTotal: Number,
