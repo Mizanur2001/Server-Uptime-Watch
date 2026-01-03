@@ -29,6 +29,9 @@ module.exports = {
           const diskUsedGB = (response.data.diskUsed / (1024 * 1024 * 1024)).toFixed(2);
           const diskTotalGB = (response.data.diskTotal / (1024 * 1024 * 1024)).toFixed(2);
 
+          const netUploadMBps = Number(response.data.netUploadMBps ?? 0);
+          const netDownloadMBps = Number(response.data.netDownloadMBps ?? 0);
+
           await Server.updateOne(
             { _id: s._id },
             {
@@ -39,6 +42,8 @@ module.exports = {
               memTotal: memTotalGB,
               diskUsed: diskUsedGB,
               diskTotal: diskTotalGB,
+              netUploadMBps,
+              netDownloadMBps,
               alertSent: false,
               downSince: null,
             }
@@ -52,6 +57,8 @@ module.exports = {
             memTotal: memTotalGB + " GB",
             diskUsed: diskUsedGB + " GB",
             diskTotal: diskTotalGB + " GB",
+            netUploadMBps,
+            netDownloadMBps,
             ip: s.ip,
             lastPing: new Date(),
             id: s._id,

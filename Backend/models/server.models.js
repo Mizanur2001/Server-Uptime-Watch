@@ -13,6 +13,8 @@ const serverSchema = new mongoose.Schema({
     memTotal: Number,
     diskUsed: Number,
     diskTotal: Number,
+    netUploadMBps: { type: Number, default: 0 },
+    netDownloadMBps: { type: Number, default: 0 },
     alertSent: { type: Boolean, default: false },
 });
 

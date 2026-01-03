@@ -1,6 +1,6 @@
 {
   "name": "server_monitoring_dashboard",
-  "version": "1.15.1",
+  "version": "1.16.1",
   "private": true,
   "dependencies": {
     "@testing-library/dom": "^10.4.1",

@@ -31,6 +31,12 @@ const parseGB = (value) => {
   return parseFloat(String(value).replace("GB", "").trim());
 };
 
+const formatMBps = (value) => {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return "0.00";
+  return n.toFixed(2);
+};
+
 // ==========================================
 // 2. SUB-COMPONENTS
 // ==========================================
@@ -217,7 +223,8 @@ const ServerBlade = ({ server }) => {
           )}
 
           <span className="text-[9px] font-mono text-cyan-600 flex items-center gap-1 relative z-10">
-             <ArrowDownUp size={10} /> 1GBPS
+             <ArrowDownUp size={10} />
+             ↓{formatMBps(server.netDownloadMBps)}MB/s ↑{formatMBps(server.netUploadMBps)}MB/s
           </span>
       </div>
     </div>
@@ -250,6 +257,8 @@ export default function Servers() {
         diskUsed, diskTotal,
         diskPercent: diskTotal > 0 ? ((diskUsed / diskTotal) * 100).toFixed(1) : 0,
         lastPing: s.lastPing || null,
+        netUploadMBps: s.netUploadMBps ?? 0,
+        netDownloadMBps: s.netDownloadMBps ?? 0,
       };
     });
 
