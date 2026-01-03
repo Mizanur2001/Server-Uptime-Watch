@@ -205,7 +205,7 @@ const ServerBlade = ({ server }) => {
           <span className="text-[9px] font-mono text-slate-600 relative z-10">ID: {server.id.substring(0,8)}</span>
 
           {isOnline && (
-            <div className="absolute inset-0 flex items-center justify-center gap-4 pointer-events-none">
+            <div className="hidden sm:flex absolute inset-0 items-center justify-center gap-4 pointer-events-none">
                 {/* Left Vents */}
                 <div className="flex gap-[2px] opacity-20">
                    {[...Array(6)].map((_, i) => <div key={i} className="w-[1px] h-3 bg-slate-400"></div>)}
@@ -222,8 +222,8 @@ const ServerBlade = ({ server }) => {
             </div>
           )}
 
-          <span className="text-[9px] font-mono text-cyan-600 flex items-center gap-1 relative z-10">
-             <ArrowDownUp size={10} />
+          <span className="text-xs font-mono text-cyan-600 flex items-center gap-1 relative z-10 font-bold">
+             <ArrowDownUp size={14} />
              ↓{formatMBps(server.netDownloadMBps)}MB/s ↑{formatMBps(server.netUploadMBps)}MB/s
           </span>
       </div>
