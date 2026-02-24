@@ -10,11 +10,22 @@ import {
 // ==========================================
 // 1. CONFIG & UTILS
 // ==========================================
-const token = localStorage.getItem("token");
 
-const socket = token
-  ? io(import.meta.env.REACT_APP_API_URL, { auth: { token } })
-  : null;
+// Token and socket are retrieved inside component lifecycle, not at module-level.
+// Module-level socket creates a connection on every import, leaks memory,
+// and uses a stale token that never updates after re-login.
+function getToken() {
+  return localStorage.getItem("token");
+}
+
+function createSocket() {
+  const t = getToken();
+  if (!t) return null;
+  return io(import.meta.env.REACT_APP_API_URL, {
+    auth: { token: t },
+    reconnectionAttempts: 5,
+  });
+}
 
 const timeAgo = (date) => {
   if (!date) return "--";
@@ -263,6 +274,7 @@ export default function Servers() {
     });
 
   const secureFetch = async (url) => {
+    const token = getToken();
     return fetch(url, { headers: { Authorization: `Bearer ${token}` } });
   };
 
@@ -288,10 +300,11 @@ export default function Servers() {
 
   useEffect(() => {
     fetchServers();
+    const socket = createSocket();
     if (socket) {
       socket.on("servers_update", (data) => setServers(mapServerData(data)));
     }
-    return () => { if (socket) socket.off("servers_update"); };
+    return () => { if (socket) { socket.off("servers_update"); socket.disconnect(); } };
     // eslint-disable-next-line
   }, []);
 

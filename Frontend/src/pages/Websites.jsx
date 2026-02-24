@@ -11,11 +11,19 @@ import {
 // ==========================================
 // 1. CONFIG & UTILS
 // ==========================================
-const token = localStorage.getItem("token");
 
-const socket = token
-  ? io(import.meta.env.REACT_APP_API_URL, { auth: { token } })
-  : null;
+function getToken() {
+  return localStorage.getItem("token");
+}
+
+function createSocket() {
+  const t = getToken();
+  if (!t) return null;
+  return io(import.meta.env.REACT_APP_API_URL, {
+    auth: { token: t },
+    reconnectionAttempts: 5,
+  });
+}
 
 const timeAgo = (date) => {
   if (!date) return "--";
@@ -184,6 +192,7 @@ export default function Websites() {
   };
 
   const secureFetch = async (url) => {
+    const token = getToken();
     return fetch(url, { headers: { Authorization: `Bearer ${token}` } });
   };
 
@@ -208,9 +217,10 @@ export default function Websites() {
 
   useEffect(() => {
     fetchWebsites();
+    const socket = createSocket();
     if(socket) {
         socket.on("websites_update", (data) => setWebsites(mapWebsiteData(data)));
-        return () => socket.off("websites_update");
+        return () => { socket.off("websites_update"); socket.disconnect(); };
     }
     // eslint-disable-next-line
   }, []);

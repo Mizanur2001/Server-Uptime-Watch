@@ -1,12 +1,33 @@
 const express = require("express");
 const si = require("systeminformation");
-const cors = require("cors");
+const helmet = require("helmet");
+const rateLimit = require("express-rate-limit");
 require("dotenv").config();
 
 const app = express();
-app.use(cors());
+
+// Security headers
+app.use(helmet());
+
+// Disable CORS entirely - agent should only accept requests from the monitoring backend
+// Do NOT use cors() here
 
 const API_KEY = process.env.MONITOR_KEY;
+
+if (!API_KEY || API_KEY.length < 16) {
+    console.error("FATAL: MONITOR_KEY must be set and at least 16 characters!");
+    process.exit(1);
+}
+
+// Rate limit: max 30 requests per minute
+const limiter = rateLimit({
+    windowMs: 60 * 1000,
+    max: 30,
+    standardHeaders: true,
+    legacyHeaders: false,
+    message: { error: "Too many requests" },
+});
+app.use(limiter);
 
 const NETWORK_SAMPLE_INTERVAL_MS = 1000;
 
@@ -80,10 +101,24 @@ const startNetworkSampler = () => {
 
 startNetworkSampler();
 
+const crypto = require("crypto");
+
 app.use((req, res, next) => {
-    if (req.headers["x-api-key"] !== API_KEY) {
+    const providedKey = req.headers["x-api-key"];
+    
+    // Reject if no key or wrong type
+    if (!providedKey || typeof providedKey !== 'string') {
         return res.status(403).json({ error: "Access Forbidden" });
     }
+
+    // Constant-time comparison to prevent timing attacks
+    const keyBuffer = Buffer.from(providedKey);
+    const apiKeyBuffer = Buffer.from(API_KEY);
+    
+    if (keyBuffer.length !== apiKeyBuffer.length || !crypto.timingSafeEqual(keyBuffer, apiKeyBuffer)) {
+        return res.status(403).json({ error: "Access Forbidden" });
+    }
+    
     next();
 });
 

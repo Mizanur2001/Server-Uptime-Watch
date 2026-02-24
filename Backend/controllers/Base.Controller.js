@@ -338,8 +338,8 @@ const HandleError = (res, message) => {
         return;  // CRON MODE
     }
 
-    res.status(202).json({
-        code: 202,
+    res.status(400).json({
+        code: 400,
         error: message,
         status: "error"
     });
@@ -363,16 +363,17 @@ const UnauthorizedError = (res, message) => {
 
 const HandleServerError = (req, res, err) => {
 
-    const errLog = {
+    // Log safely - never log passwords or sensitive body data
+    const safeLog = {
         method: req ? req.method : "CRON",
         url: req ? req.originalUrl : "CRON",
         params: req ? req.params : {},
         query: req ? req.query : {},
-        post: req ? req.body : {},
-        error: err,
+        // Do NOT log req.body (may contain passwords, tokens, apiKeys)
+        errorMessage: err ? err.message : "Unknown error",
     };
 
-    console.log("Server Error Log:", errLog);
+    console.error("Server Error Log:", safeLog);
 
     // If res is invalid → CRON MODE → do not respond
     if (!res || typeof res.status !== "function") {
