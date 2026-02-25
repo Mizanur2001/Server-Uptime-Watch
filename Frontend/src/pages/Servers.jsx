@@ -6,6 +6,7 @@ import {
   Server, HardDrive, Activity, Plus, Search, 
   Terminal, ArrowDownUp, Fan, AlertTriangle 
 } from "lucide-react";
+import { ServersSkeleton } from "../components/Skeletons.jsx";
 
 // ==========================================
 // 1. CONFIG & UTILS
@@ -249,6 +250,7 @@ export default function Servers() {
   const [servers, setServers] = useState([]);
   const [openAdd, setOpenAdd] = useState(false);
   const [search, setSearch] = useState("");
+  const [loading, setLoading] = useState(true);
 
   const mapServerData = (data) =>
     data.map((s) => {
@@ -295,6 +297,8 @@ export default function Servers() {
       }
     } catch (error) {
       console.error("Failed to fetch servers:", error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -354,7 +358,7 @@ export default function Servers() {
         </div>
       </div>
 
-      {filteredServers.length === 0 ? (
+      {loading ? <ServersSkeleton /> : filteredServers.length === 0 ? (
         <div className="h-64 flex flex-col items-center justify-center border border-dashed border-slate-800 rounded-lg text-slate-500 font-mono">
            <AlertTriangle size={32} className="mb-4 opacity-50"/>
            <span>NO_NODES_FOUND</span>

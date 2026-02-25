@@ -7,6 +7,7 @@ import {
   Plus, Search, ExternalLink, Activity, 
   AlertTriangle 
 } from "lucide-react";
+import { WebsitesSkeleton } from "../components/Skeletons.jsx";
 
 // ==========================================
 // 1. CONFIG & UTILS
@@ -165,6 +166,7 @@ export default function Websites() {
   const [websites, setWebsites] = useState([]);
   const [modalOpen, setModalOpen] = useState(false);
   const [search, setSearch] = useState("");
+  const [loading, setLoading] = useState(true);
 
   // --- Mappers ---
   const mapWebsiteData = (data) => {
@@ -212,6 +214,8 @@ export default function Websites() {
       }
     } catch (error) {
       console.error("Failed to fetch websites:", error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -276,7 +280,7 @@ export default function Websites() {
       </div>
 
       {/* Grid Content */}
-      {filteredSites.length === 0 ? (
+      {loading ? <WebsitesSkeleton /> : filteredSites.length === 0 ? (
         <div className="h-64 flex flex-col items-center justify-center border border-dashed border-slate-800 rounded-lg text-slate-500 font-mono">
            <AlertTriangle size={32} className="mb-4 opacity-50"/>
            <span>NO_ENDPOINTS_FOUND</span>

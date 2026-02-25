@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { io } from "socket.io-client";
 import { Server, Globe, Activity, AlertCircle, HardDrive, Terminal } from "lucide-react";
 import { toast } from "sonner";
+import { DashboardSkeleton } from "../components/Skeletons.jsx";
 
 // ======================================================
 // CONFIG & UTILS
@@ -183,6 +184,7 @@ const ServerCard = ({ server }) => {
 export default function Dashboard() {
   const [servers, setServers] = useState([]);
   const [websites, setWebsites] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   // --- Mappers ---
   const mapServerData = (data) =>
@@ -238,6 +240,8 @@ export default function Dashboard() {
       if (siteJson.status === "success") setWebsites(mapWebsiteData(siteJson.data));
     } catch (err) {
       console.error(err);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -270,6 +274,7 @@ export default function Dashboard() {
         </div>
       </div>
 
+      {loading ? <DashboardSkeleton /> : (
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         
         {/* LEFT: SERVERS */}
@@ -324,6 +329,7 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
+      )}
     </div>
   );
 }
