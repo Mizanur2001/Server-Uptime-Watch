@@ -277,20 +277,21 @@ export default function Servers() {
 
   const secureFetch = async (url) => {
     const token = getToken();
-    return fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+    const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+    if (res.status === 401) {
+      toast.error("Session expired. Please login again.");
+      localStorage.removeItem("token");
+      window.location.href = "/login";
+      return null;
+    }
+    return res;
   };
 
   const fetchServers = async () => {
     try {
       const res = await secureFetch(`${import.meta.env.REACT_APP_API_URL}/api/v1/server`);
+      if (!res) return;
       const json = await res.json();
-
-      if (json.error === "Invalid or expired token") {
-        toast.error("Session expired");
-        localStorage.removeItem("token");
-        window.location.href = "/login";
-        return;
-      }
 
       if (json.status === "success") {
         setServers(mapServerData(json.data));

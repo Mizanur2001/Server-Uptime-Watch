@@ -218,24 +218,27 @@ export default function Dashboard() {
 
   // --- Fetch Logic ---
   const secureFetch = async (url) => {
-    return fetch(url, { headers: { Authorization: `Bearer ${token}` } });
+    return fetch(url, { headers: { Authorization: `Bearer ${token}` } }).then((res) => {
+      if (res.status === 401) {
+        toast.error("Session expired. Please login again.");
+        localStorage.removeItem("token");
+        window.location.href = "/login";
+        return null;
+      }
+      return res;
+    });
   };
 
   const fetchDashboardData = async () => {
     try {
       const serverRes = await secureFetch(`${import.meta.env.REACT_APP_API_URL}/api/v1/server`);
+      if (!serverRes) return;
       const serverJson = await serverRes.json();
-
-      if (serverJson.error === "Invalid or expired token") {
-        toast.error("Session expired");
-        localStorage.removeItem("token");
-        window.location.href = "/login";
-        return;
-      }
 
       if (serverJson.status === "success") setServers(mapServerData(serverJson.data));
 
       const siteRes = await secureFetch(`${import.meta.env.REACT_APP_API_URL}/api/v1/website`);
+      if (!siteRes) return;
       const siteJson = await siteRes.json();
       if (siteJson.status === "success") setWebsites(mapWebsiteData(siteJson.data));
     } catch (err) {
